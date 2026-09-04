@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Panel Principal - DIF Tecámac</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 30px; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ccc; padding-bottom: 10px; }
+        .menu { margin-top: 20px; }
+        .menu a { display: inline-block; padding: 10px 15px; background: #f4f4f4; border: 1px solid #ccc; text-decoration: none; color: black; margin-right: 10px; }
+        .menu a:hover { background: #e2e2e2; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Panel de Control - DIF Tecámac</h2>
+        <div>
+            <span>Usuario: <strong>{{ departamento }}</strong></span> | 
+            <a href="/logout">Cerrar Sesión</a>
+        </div>
+    </div>
+
+    <div class="menu">
+        <h3>Áreas Disponibles:</h3>
+        {% if departamento == 'Departamento de servicio social' %}
+            <a href="/area/Departamento de servicio social">Ir a Servicio Social</a>
+        {% elif departamento == 'Departamento de recursos humanos' %}
+            <p>Módulo de Recursos Humanos (Próximamente)</p>
+        {% elif departamento == 'Departamento de juridico' %}
+            <p>Módulo Jurídico (Próximamente)</p>
+        {% endif %}
+    </div>
+</body>
+</html>
