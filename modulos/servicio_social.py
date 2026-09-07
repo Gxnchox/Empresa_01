@@ -1,22 +1,20 @@
 import os
 import sqlite3
-from flask import render_template, request, redirect, url_for, send_from_directory
-from werkzeug.utils import secure_filename
+from flask import redirect, render_template, request, session, url_for
 
-BASE_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
-DB_PATH = os.path.join(BASE_DIR, 'dif_tecamac.db')
-ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg'}
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+DB_PATH = os.path.join(BASE_DIR, '..', 'dif_tecamac.db')
+UPLOAD_FOLDER = os.path.join(BASE_DIR, '..', 'uploads')
 
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def inicializar_base_datos():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute('''
+def inicializar_db_servicio():
+  if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+  conn = sqlite3.connect(DB_PATH)
+  cursor = conn.cursor()
+  cursor.execute('''
         CREATE TABLE IF NOT EXISTS servicio_social (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            folio TEXT PRIMARY KEY,
             nombre TEXT NOT NULL,
             curp TEXT NOT NULL,
             carta TEXT,
@@ -28,148 +26,211 @@ def inicializar_base_datos():
             termino TEXT
         )
     ''')
-    conn.commit()
-    conn.close()
+  conn.commit()
+  conn.close()
+
+
+def generar_siguiente_folio():
+  conn = sqlite3.connect(DB_PATH)
+  cursor = conn.cursor()
+  cursor.execute('SELECT COUNT(*) FROM servicio_social')
+  total = cursor.fetchone()[0]
+  conn.close()
+  siguiente_numero = total + 1
+  return f'SS-2026-{siguiente_numero:04d}'
+
 
 def registrar_servicio_social():
-    inicializar_base_datos()
-    
-    if not os.path.exists(UPLOAD_FOLDER):
-        os.makedirs(UPLOAD_FOLDER)
+  inicializar_db_servicio()
+  conn = sqlite3.connect(DB_PATH)
+  conn.row_factory = sqlite3.Row
+  cursor = conn.cursor()
 
-    if request.method == 'POST':
-        # 1. Reemplazar o subir archivo individual directamente en la tabla
-        if 'actualizar_campo' in request.form:
-            prestador_id = request.form.get('prestador_id')
-            campo = request.form.get('actualizar_campo')
-            campos_validos = ['carta', 'doc_curp', 'domicilio', 'foto', 'aceptacion', 'bitacora', 'termino']
-            
-            if campo in campos_validos:
-                file_obj = request.files.get(f'file_{campo}')
-                if file_obj and file_obj.filename != '' and allowed_file(file_obj.filename):
-                    conn = sqlite3.connect(DB_PATH)
-                    cursor = conn.cursor()
-                    
-                    cursor.execute("SELECT nombre, " + campo + " FROM servicio_social WHERE id = ?", (prestador_id,))
-                    row = cursor.fetchone()
-                    
-                    if row:
-                        nombre_alumno = row[0]
-                        archivo_anterior = row[1]
-                        
-                        if archivo_anterior:
-                            ruta_ant = os.path.join(UPLOAD_FOLDER, archivo_anterior)
-                            if os.path.exists(ruta_ant):
-                                os.remove(ruta_ant)
-                        
-                        filename = secure_filename(f"{nombre_alumno}_{campo}_{file_obj.filename}")
-                        file_obj.save(os.path.join(UPLOAD_FOLDER, filename))
-                        
-                        cursor.execute(f"UPDATE servicio_social SET {campo} = ? WHERE id = ?", (filename, prestador_id))
-                        conn.commit()
-                    conn.close()
-            return redirect(url_for('detalle_servicio_social'))
-
-        # 2. Borrar registro completo del alumno
-        if 'eliminar_id' in request.form:
-            id_a_borrar = request.form.get('eliminar_id')
-            conn = sqlite3.connect(DB_PATH)
-            cursor = conn.cursor()
-            cursor.execute('SELECT carta, doc_curp, domicilio, foto, aceptacion, bitacora, termino FROM servicio_social WHERE id = ?', (id_a_borrar,))
-            row = cursor.fetchone()
-            if row:
-                for archivo_nombre in row:
-                    if archivo_nombre:
-                        ruta_archivo = os.path.join(UPLOAD_FOLDER, archivo_nombre)
-                        if os.path.exists(ruta_archivo):
-                            os.remove(ruta_archivo)
-            cursor.execute('DELETE FROM servicio_social WHERE id = ?', (id_a_borrar,))
-            conn.commit()
-            conn.close()
-            return redirect(url_for('detalle_servicio_social'))
-
-        # 3. Registrar nuevo alumno completo
-        nombre = request.form.get('nombre')
-        curp_texto = request.form.get('curp')
-        
-        archivos_keys = ['carta', 'doc_curp', 'domicilio', 'foto', 'aceptacion', 'bitacora', 'termino']
-        nombres_archivos = {}
-        
-        for key in archivos_keys:
-            file_obj = request.files.get(f'file_{key}')
-            if file_obj and file_obj.filename != '' and allowed_file(file_obj.filename):
-                filename = secure_filename(f"{nombre}_{key}_{file_obj.filename}")
-                file_obj.save(os.path.join(UPLOAD_FOLDER, filename))
-                nombres_archivos[key] = filename
-            else:
-                nombres_archivos[key] = None
-
-        if nombre and curp_texto:
-            conn = sqlite3.connect(DB_PATH)
-            cursor = conn.cursor()
-            cursor.execute('''
-                INSERT INTO servicio_social (nombre, curp, carta, doc_curp, domicilio, foto, aceptacion, bitacora, termino)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                nombre, curp_texto, 
-                nombres_archivos['carta'], nombres_archivos['doc_curp'], 
-                nombres_archivos['domicilio'], nombres_archivos['foto'], 
-                nombres_archivos['aceptacion'], nombres_archivos['bitacora'], 
-                nombres_archivos['termino']
-            ))
-            conn.commit()
-            conn.close()
-            
-        return redirect(url_for('detalle_servicio_social'))
-    
-    busqueda = request.args.get('q', '').strip()
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    
-    if busqueda:
-        cursor.execute("SELECT * FROM servicio_social WHERE nombre LIKE ? OR curp LIKE ?", (f'%{busqueda}%', f'%{busqueda}%'))
-    else:
-        cursor.execute("SELECT * FROM servicio_social")
-        
-    filas = cursor.fetchall()
-    conn.close()
-    
-    prestadores = []
-    for f in filas:
-        prestadores.append({
-            'id': f[0],
-            'nombre': f[1],
-            'curp': f[2],
-            'archivos': {
-                'carta': f[3],
-                'doc_curp': f[4],
-                'domicilio': f[5],
-                'foto': f[6],
-                'aceptacion': f[7],
-                'bitacora': f[8],
-                'termino': f[9]
-            }
-        })
-        
-    return render_template('servicio_social.html', area_nombre="Departamento de servicio social", prestadores=prestadores, busqueda=busqueda)
-
-def eliminar_documento_individual(prestador_id, campo):
-    campos_validos = ['carta', 'doc_curp', 'domicilio', 'foto', 'aceptacion', 'bitacora', 'termino']
-    if campo not in campos_validos:
-        return redirect(url_for('detalle_servicio_social'))
-
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    
-    cursor.execute(f"SELECT {campo} FROM servicio_social WHERE id = ?", (prestador_id,))
+  # Eliminar expediente completo por folio
+  if request.method == 'POST' and 'eliminar_folio' in request.form:
+    folio_a_eliminar = request.form.get('eliminar_folio')
+    cursor.execute(
+        'SELECT carta, doc_curp, domicilio, foto, aceptacion, bitacora,'
+        ' termino FROM servicio_social WHERE folio = ?',
+        (folio_a_eliminar,),
+    )
     row = cursor.fetchone()
-    if row and row[0]:
-        ruta_archivo = os.path.join(UPLOAD_FOLDER, row[0])
-        if os.path.exists(ruta_archivo):
-            os.remove(ruta_archivo)
-            
-    cursor.execute(f"UPDATE servicio_social SET {campo} = NULL WHERE id = ?", (prestador_id,))
+    if row:
+      campos_archivos = [
+          'carta',
+          'doc_curp',
+          'domicilio',
+          'foto',
+          'aceptacion',
+          'bitacora',
+          'termino',
+      ]
+      for campo in campos_archivos:
+        archivo = row[campo]
+        if archivo:
+          path_archivo = os.path.join(UPLOAD_FOLDER, archivo)
+          if os.path.exists(path_archivo):
+            os.remove(path_archivo)
+
+    cursor.execute(
+        'DELETE FROM servicio_social WHERE folio = ?', (folio_a_eliminar,)
+    )
     conn.commit()
     conn.close()
-    
     return redirect(url_for('detalle_servicio_social'))
+
+  if request.method == 'POST':
+    folio_existente = request.form.get('folio_prestador')
+    actualizar_campo = request.form.get('actualizar_campo')
+
+    # Reemplazar o subir documento individual usando el folio
+    if folio_existente and actualizar_campo:
+      file_key = f'file_{actualizar_campo}'
+      if file_key in request.files:
+        file = request.files[file_key]
+        if file and file.filename != '':
+          filename = f'{folio_existente}_{actualizar_campo}_{file.filename}'
+          file.save(os.path.join(UPLOAD_FOLDER, filename))
+
+          cursor.execute(
+              f'SELECT {actualizar_campo} FROM servicio_social WHERE folio = ?',
+              (folio_existente,),
+          )
+          old_file = cursor.fetchone()[0]
+          if old_file:
+            old_path = os.path.join(UPLOAD_FOLDER, old_file)
+            if os.path.exists(old_path):
+              os.remove(old_path)
+
+          cursor.execute(
+              f'UPDATE servicio_social SET {actualizar_campo} = ? WHERE folio'
+              ' = ?',
+              (filename, folio_existente),
+          )
+          conn.commit()
+      conn.close()
+      return redirect(url_for('detalle_servicio_social'))
+
+    # Registrar nuevo prestador con folio automático
+    nombre = request.form.get('nombre')
+    curp = request.form.get('curp')
+
+    if nombre and curp:
+      nuevo_folio = generar_siguiente_folio()
+
+      nombres_form = [
+          'file_carta',
+          'file_doc_curp',
+          'file_domicilio',
+          'file_foto',
+          'file_aceptacion',
+          'file_bitacora',
+          'file_termino',
+      ]
+      db_campos = [
+          'carta',
+          'doc_curp',
+          'domicilio',
+          'foto',
+          'aceptacion',
+          'bitacora',
+          'termino',
+      ]
+
+      archivos_guardados = {}
+      for campo_db, campo_form in zip(db_campos, nombres_form):
+        file = request.files.get(campo_form)
+        if file and file.filename != '':
+          filename = f'{nuevo_folio}_{campo_db}_{file.filename}'
+          file.save(os.path.join(UPLOAD_FOLDER, filename))
+          archivos_guardados[campo_db] = filename
+        else:
+          archivos_guardados[campo_db] = None
+
+      cursor.execute(
+          '''
+            INSERT INTO servicio_social (folio, nombre, curp, carta, doc_curp, domicilio, foto, aceptacion, bitacora, termino)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''',
+          (
+              nuevo_folio,
+              nombre,
+              curp,
+              archivos_guardados['carta'],
+              archivos_guardados['doc_curp'],
+              archivos_guardados['domicilio'],
+              archivos_guardados['foto'],
+              archivos_guardados['aceptacion'],
+              archivos_guardados['bitacora'],
+              archivos_guardados['termino'],
+          ),
+      )
+      conn.commit()
+      conn.close()
+      return redirect(url_for('detalle_servicio_social'))
+
+  busqueda = request.args.get('q', '').strip()
+  if busqueda:
+    cursor.execute(
+        'SELECT * FROM servicio_social WHERE nombre LIKE ? OR curp LIKE ? OR'
+        ' folio LIKE ?',
+        (f'%{busqueda}%', f'%{busqueda}%', f'%{busqueda}%'),
+    )
+  else:
+    cursor.execute('SELECT * FROM servicio_social')
+
+  filas = cursor.fetchall()
+  conn.close()
+
+  prestadores = []
+  for row in filas:
+    prestadores.append({
+        'folio': row['folio'],
+        'nombre': row['nombre'],
+        'curp': row['curp'],
+        'archivos': {
+            'carta': row['carta'],
+            'doc_curp': row['doc_curp'],
+            'domicilio': row['domicilio'],
+            'foto': row['foto'],
+            'aceptacion': row['aceptacion'],
+            'bitacora': row['bitacora'],
+            'termino': row['termino'],
+        },
+    })
+
+  return render_template(
+      'servicio_social.html', prestadores=prestadores, busqueda=busqueda
+  )
+
+
+def eliminar_documento_individual(folio, campo):
+  inicializar_db_servicio()
+  conn = sqlite3.connect(DB_PATH)
+  cursor = conn.cursor()
+
+  campos_validos = [
+      'carta',
+      'doc_curp',
+      'domicilio',
+      'foto',
+      'aceptacion',
+      'bitacora',
+      'termino',
+  ]
+  if campo in campos_validos:
+    cursor.execute(
+        f'SELECT {campo} FROM servicio_social WHERE folio = ?', (folio,)
+    )
+    row = cursor.fetchone()
+    if row and row[0]:
+      path_archivo = os.path.join(UPLOAD_FOLDER, row[0])
+      if os.path.exists(path_archivo):
+        os.remove(path_archivo)
+      cursor.execute(
+          f'UPDATE servicio_social SET {campo} = NULL WHERE folio = ?', (folio,)
+      )
+      conn.commit()
+
+  conn.close()
+  return redirect(url_for('detalle_servicio_social'))

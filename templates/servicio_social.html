@@ -12,6 +12,7 @@
         ul { padding-left: 0; list-style: none; }
         li { margin-bottom: 12px; border-bottom: 1px dashed #eee; padding-bottom: 8px; }
         .subir-inline { margin-top: 4px; font-size: 11px; }
+        .badge-folio { background-color: #e9ecef; padding: 3px 6px; border-radius: 4px; font-weight: bold; color: #007bff; }
     </style>
 </head>
 <body>
@@ -29,7 +30,7 @@
     <!-- BARRA DE BÚSQUEDA -->
     <div class="search-box">
         <form method="GET" action="/area/Departamento de servicio social">
-            <label><strong>Buscar Alumno (por Nombre o CURP):</strong></label><br><br>
+            <label><strong>Buscar Alumno (por Folio, Nombre o CURP):</strong></label><br><br>
             <input type="text" name="q" value="{{ busqueda }}" placeholder="Escribe para buscar..." style="width: 300px; padding: 5px;">
             <button type="submit" style="padding: 6px 12px;">Buscar</button>
             {% if busqueda %}
@@ -40,6 +41,8 @@
 
     <h3>Registrar Nuevo Prestador (Expediente)</h3>
     <form action="/area/Departamento de servicio social" method="POST" enctype="multipart/form-data">
+        <p style="color: #666; font-size: 13px;"><em>* El folio único se asignará automáticamente al guardar el registro.</em></p>
+        
         <label>Nombre completo del estudiante:</label><br>
         <input type="text" name="nombre" required style="width: 300px;"><br><br>
 
@@ -61,13 +64,14 @@
     <h3>Prestadores Registrados:</h3>
     <table>
         <tr>
-            <th>Nombre y CURP</th>
+            <th>Folio / Alumno</th>
             <th>Documentos (Ver, Borrar o Reemplazar individualmente)</th>
             <th>Acciones Generales</th>
         </tr>
         {% for p in prestadores %}
         <tr>
             <td>
+                <span class="badge-folio">{{ p.folio }}</span><br><br>
                 <strong>{{ p.nombre }}</strong><br>
                 <small>CURP: {{ p.curp }}</small>
             </td>
@@ -88,7 +92,7 @@
                             <strong>{{ nombre_doc }}:</strong> 
                             {% if archivo %}
                                 <a href="/uploads/{{ archivo }}" target="_blank">Ver</a>
-                                <form action="/eliminar-documento/{{ p.id }}/{{ campo_key }}" method="POST" style="display:inline;" onsubmit="return confirm('¿Seguro que quiere borrar el documento de {{ nombre_doc }}?');">
+                                <form action="/eliminar-documento/{{ p.folio }}/{{ campo_key }}" method="POST" style="display:inline;" onsubmit="return confirm('¿Seguro que quiere borrar el documento de {{ nombre_doc }}?');">
                                     <button type="submit">Borrar</button>
                                 </form>
                                 <br><small>(Subido)</small>
@@ -96,9 +100,9 @@
                                 <span style="color: gray; font-size: 11px;">No subido</span>
                             {% endif %}
                             
-                            <!-- Formulario directo para subir o reemplazar -->
+                            <!-- Formulario para subir o reemplazar -->
                             <form action="/area/Departamento de servicio social" method="POST" enctype="multipart/form-data" class="subir-inline">
-                                <input type="hidden" name="prestador_id" value="{{ p.id }}">
+                                <input type="hidden" name="folio_prestador" value="{{ p.folio }}">
                                 <input type="hidden" name="actualizar_campo" value="{{ campo_key }}">
                                 <input type="file" name="file_{{ campo_key }}" required accept=".pdf, .png, .jpg, .jpeg" style="font-size: 10px;">
                                 <button type="submit">{% if archivo %}Reemplazar{% else %}Subir{% endif %}</button>
@@ -108,9 +112,9 @@
                 </ul>
             </td>
             <td>
-                <form action="/area/Departamento de servicio social" method="POST" onsubmit="return confirm('¿Estás seguro de eliminar todo el expediente de este alumno?');">
-                    <input type="hidden" name="eliminar_id" value="{{ p.id }}">
-                    <button type="submit">Eliminar Alumno</button>
+                <form action="/area/Departamento de servicio social" method="POST" onsubmit="return confirm('¿Estás seguro de eliminar todo el expediente con folio {{ p.folio }}?');">
+                    <input type="hidden" name="eliminar_folio" value="{{ p.folio }}">
+                    <button type="submit" style="background-color: #dc3545; color: white; border: none; padding: 6px 10px; cursor: pointer; border-radius: 4px;">Eliminar Alumno</button>
                 </form>
             </td>
         </tr>
