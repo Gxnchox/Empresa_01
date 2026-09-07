@@ -46,7 +46,7 @@ def registrar_servicio_social():
   conn.row_factory = sqlite3.Row
   cursor = conn.cursor()
 
-  # Eliminar expediente completo por folio
+  # Eliminar expediente completo por folio (movido a la misma columna)
   if request.method == 'POST' and 'eliminar_folio' in request.form:
     folio_a_eliminar = request.form.get('eliminar_folio')
     cursor.execute(
@@ -83,35 +83,34 @@ def registrar_servicio_social():
     folio_existente = request.form.get('folio_prestador')
     actualizar_campo = request.form.get('actualizar_campo')
 
-    # Reemplazar o subir documento individual usando el folio
+    # Reemplazar o subir documento individual rápidamente
     if folio_existente and actualizar_campo:
       file_key = f'file_{actualizar_campo}'
-      if file_key in request.files:
-        file = request.files[file_key]
-        if file and file.filename != '':
-          filename = f'{folio_existente}_{actualizar_campo}_{file.filename}'
-          file.save(os.path.join(UPLOAD_FOLDER, filename))
+      file = request.files.get(file_key)
+      if file and file.filename != '':
+        filename = f'{folio_existente}_{actualizar_campo}_{file.filename}'
+        file.save(os.path.join(UPLOAD_FOLDER, filename))
 
-          cursor.execute(
-              f'SELECT {actualizar_campo} FROM servicio_social WHERE folio = ?',
-              (folio_existente,),
-          )
-          old_file = cursor.fetchone()[0]
-          if old_file:
-            old_path = os.path.join(UPLOAD_FOLDER, old_file)
-            if os.path.exists(old_path):
-              os.remove(old_path)
+        cursor.execute(
+            f'SELECT {actualizar_campo} FROM servicio_social WHERE folio = ?',
+            (folio_existente,),
+        )
+        old_file = cursor.fetchone()[0]
+        if old_file:
+          old_path = os.path.join(UPLOAD_FOLDER, old_file)
+          if os.path.exists(old_path):
+            os.remove(old_path)
 
-          cursor.execute(
-              f'UPDATE servicio_social SET {actualizar_campo} = ? WHERE folio'
-              ' = ?',
-              (filename, folio_existente),
-          )
-          conn.commit()
+        cursor.execute(
+            f'UPDATE servicio_social SET {actualizar_campo} = ? WHERE folio'
+            ' = ?',
+            (filename, folio_existente),
+        )
+        conn.commit()
       conn.close()
       return redirect(url_for('detalle_servicio_social'))
 
-    # Registrar nuevo prestador con folio automático
+    # Registrar nuevo prestador (optimizado)
     nombre = request.form.get('nombre')
     curp = request.form.get('curp')
 

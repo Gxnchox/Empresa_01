@@ -13,6 +13,8 @@
         li { margin-bottom: 12px; border-bottom: 1px dashed #eee; padding-bottom: 8px; }
         .subir-inline { margin-top: 4px; font-size: 11px; }
         .badge-folio { background-color: #e9ecef; padding: 3px 6px; border-radius: 4px; font-weight: bold; color: #007bff; }
+        details { background: #fdfdfd; border: 1px solid #ccc; padding: 10px; margin-bottom: 20px; border-radius: 4px; }
+        summary { font-weight: bold; cursor: pointer; color: #007bff; }
     </style>
 </head>
 <body>
@@ -39,34 +41,38 @@
         </form>
     </div>
 
-    <h3>Registrar Nuevo Prestador (Expediente)</h3>
-    <form action="/area/Departamento de servicio social" method="POST" enctype="multipart/form-data">
-        <p style="color: #666; font-size: 13px;"><em>* El folio único se asignará automáticamente al guardar el registro.</em></p>
-        
-        <label>Nombre completo del estudiante:</label><br>
-        <input type="text" name="nombre" required style="width: 300px;"><br><br>
+    <!-- FORMULARIO EN LISTA DESPLEGABLE (ACCORDION) -->
+    <details>
+        <summary>+ Registrar Nuevo Prestador (Hacer clic para desplegar formulario)</summary>
+        <div style="margin-top: 15px;">
+            <form action="/area/Departamento de servicio social" method="POST" enctype="multipart/form-data">
+                <p style="color: #666; font-size: 13px;"><em>* El folio único se asignará automáticamente al guardar el registro.</em></p>
+                
+                <label>Nombre completo del estudiante:</label><br>
+                <input type="text" name="nombre" required style="width: 300px;"><br><br>
 
-        <label>CURP (Texto):</label><br>
-        <input type="text" name="curp" required style="width: 300px;"><br><br>
+                <label>CURP (Texto):</label><br>
+                <input type="text" name="curp" required style="width: 300px;"><br><br>
 
-        <label>1. Carta de Presentación:</label> <input type="file" name="file_carta" accept=".pdf, .png, .jpg"><br><br>
-        <label>2. CURP (Documento):</label> <input type="file" name="file_doc_curp" accept=".pdf, .png, .jpg"><br><br>
-        <label>3. Comprobante de Domicilio:</label> <input type="file" name="file_domicilio" accept=".pdf, .png, .jpg"><br><br>
-        <label>4. Foto Infantil:</label> <input type="file" name="file_foto" accept=".png, .jpg, .jpeg"><br><br>
-        <label>5. Carta de Aceptación:</label> <input type="file" name="file_aceptacion" accept=".pdf, .png, .jpg"><br><br>
-        <label>6. Bitácora de Horas:</label> <input type="file" name="file_bitacora" accept=".pdf, .png, .jpg"><br><br>
-        <label>7. Carta de Término:</label> <input type="file" name="file_termino" accept=".pdf, .png, .jpg"><br><br>
-        
-        <button type="submit" style="padding: 8px 15px;">Guardar Expediente</button>
-    </form>
+                <label>1. Carta de Presentación:</label> <input type="file" name="file_carta" accept=".pdf, .png, .jpg"><br><br>
+                <label>2. CURP (Documento):</label> <input type="file" name="file_doc_curp" accept=".pdf, .png, .jpg"><br><br>
+                <label>3. Comprobante de Domicilio:</label> <input type="file" name="file_domicilio" accept=".pdf, .png, .jpg"><br><br>
+                <label>4. Foto Infantil:</label> <input type="file" name="file_foto" accept=".png, .jpg, .jpeg"><br><br>
+                <label>5. Carta de Aceptación:</label> <input type="file" name="file_aceptacion" accept=".pdf, .png, .jpg"><br><br>
+                <label>6. Bitácora de Horas:</label> <input type="file" name="file_bitacora" accept=".pdf, .png, .jpg"><br><br>
+                <label>7. Carta de Término:</label> <input type="file" name="file_termino" accept=".pdf, .png, .jpg"><br><br>
+                
+                <button type="submit" style="padding: 8px 15px; background-color: #28a745; color: white; border: none; cursor: pointer; border-radius: 4px;">Guardar Expediente</button>
+            </form>
+        </div>
+    </details>
 
     <hr>
     <h3>Prestadores Registrados:</h3>
     <table>
         <tr>
             <th>Folio / Alumno</th>
-            <th>Documentos (Ver, Borrar o Reemplazar individualmente)</th>
-            <th>Acciones Generales</th>
+            <th>Documentos y Gestión del Expediente</th>
         </tr>
         {% for p in prestadores %}
         <tr>
@@ -110,17 +116,19 @@
                         </li>
                     {% endfor %}
                 </ul>
-            </td>
-            <td>
-                <form action="/area/Departamento de servicio social" method="POST" onsubmit="return confirm('¿Estás seguro de eliminar todo el expediente con folio {{ p.folio }}?');">
-                    <input type="hidden" name="eliminar_folio" value="{{ p.folio }}">
-                    <button type="submit" style="background-color: #dc3545; color: white; border: none; padding: 6px 10px; cursor: pointer; border-radius: 4px;">Eliminar Alumno</button>
-                </form>
+
+                <!-- BOTÓN DE ELIMINAR ALUMNO UBICADO ABAJO DE LOS DOCUMENTOS -->
+                <div style="margin-top: 15px; border-top: 1px solid #ddd; padding-top: 10px;">
+                    <form action="/area/Departamento de servicio social" method="POST" onsubmit="return confirm('¿Estás seguro de eliminar todo el expediente con folio {{ p.folio }}?');">
+                        <input type="hidden" name="eliminar_folio" value="{{ p.folio }}">
+                        <button type="submit" style="background-color: #dc3545; color: white; border: none; padding: 6px 12px; cursor: pointer; border-radius: 4px; font-size: 12px;">Eliminar Alumno Completo</button>
+                    </form>
+                </div>
             </td>
         </tr>
         {% else %}
         <tr>
-            <td colspan="3" style="text-align: center;">No hay prestadores registrados o no se encontraron coincidencias.</td>
+            <td colspan="2" style="text-align: center;">No hay prestadores registrados o no se encontraron coincidencias.</td>
         </tr>
         {% endfor %}
     </table>
