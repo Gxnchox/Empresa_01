@@ -33,6 +33,8 @@ def login():
     depto = session['departamento']
     if depto == 'Departamento de servicio social':
       return redirect(url_for('detalle_servicio_social'))
+    if depto == 'Departamento de promoción y fomento artístico':
+      return redirect(url_for('detalle_promocion_artistica'))
     return redirect(url_for('index'))
 
   error = None
@@ -47,6 +49,8 @@ def login():
       session['departamento'] = departamento
       if departamento == 'Departamento de servicio social':
         return redirect(url_for('detalle_servicio_social'))
+      if departamento == 'Departamento de promoción y fomento artístico':
+        return redirect(url_for('detalle_promocion_artistica'))
       return redirect(url_for('index'))
     else:
       error = 'Departamento o contraseña incorrectos.'
@@ -70,6 +74,8 @@ def index():
   depto_actual = session['departamento']
   if depto_actual == 'Departamento de servicio social':
     return redirect(url_for('detalle_servicio_social'))
+  if depto_actual == 'Departamento de promoción y fomento artístico':
+    return redirect(url_for('detalle_promocion_artistica'))
 
   return render_template('index.html', departamento=depto_actual)
 
@@ -81,7 +87,7 @@ def uploaded_file(filename):
   return send_from_directory(UPLOAD_FOLDER, filename)
 
 
-# Ruta protegida para Servicio Social
+# --- RUTA PROTEGIDA: SERVICIO SOCIAL ---
 @app.route('/area/Departamento de servicio social', methods=['GET', 'POST'])
 def detalle_servicio_social():
   if (
@@ -95,7 +101,6 @@ def detalle_servicio_social():
   return registrar_servicio_social()
 
 
-# Ruta para eliminar documentos individuales usando el Folio como clave
 @app.route('/eliminar-documento/<folio>/<campo>', methods=['POST'])
 def eliminar_doc_servicio_social(folio, campo):
   if (
@@ -107,6 +112,37 @@ def eliminar_doc_servicio_social(folio, campo):
   from modulos.servicio_social import eliminar_documento_individual
 
   return eliminar_documento_individual(folio, campo)
+
+
+# --- RUTA PROTEGIDA: PROMOCIÓN Y FOMENTO ARTÍSTICO ---
+@app.route(
+    '/area/Departamento de promoción y fomento artístico', methods=['GET', 'POST']
+)
+def detalle_promocion_artistica():
+  if (
+      'departamento' not in session
+      or session['departamento']
+      != 'Departamento de promoción y fomento artístico'
+  ):
+    return redirect(url_for('login'))
+
+  from modulos.promocion_artistica import registrar_promocion_artistica
+
+  return registrar_promocion_artistica()
+
+
+@app.route('/eliminar-doc-artistico/<folio>/<campo>', methods=['POST'])
+def eliminar_doc_artistico(folio, campo):
+  if (
+      'departamento' not in session
+      or session['departamento']
+      != 'Departamento de promoción y fomento artístico'
+  ):
+    return redirect(url_for('login'))
+
+  from modulos.promocion_artistica import eliminar_documento_artistico_individual
+
+  return eliminar_documento_artistico_individual(folio, campo)
 
 
 if __name__ == '__main__':

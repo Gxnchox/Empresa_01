@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Promoción y Fomento Artístico - DIF Tecámac</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 10px; text-align: left; vertical-align: top; }
+        th { background-color: #f4f4f4; }
+        .search-box { margin-bottom: 20px; padding: 10px; background: #f9f9f9; border: 1px solid #ddd; }
+        ul { padding-left: 0; list-style: none; }
+        li { margin-bottom: 12px; border-bottom: 1px dashed #eee; padding-bottom: 8px; }
+        .subir-inline { margin-top: 4px; font-size: 11px; }
+        .badge-folio { background-color: #e2e3e5; padding: 3px 6px; border-radius: 4px; font-weight: bold; color: #383d41; }
+        details { background: #fdfdfd; border: 1px solid #ccc; padding: 10px; margin-bottom: 20px; border-radius: 4px; }
+        summary { font-weight: bold; cursor: pointer; color: #007bff; }
+    </style>
+</head>
+<body>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h1>Panel de Control</h1>
+            <h2>Departamento de Promoción y Fomento Artístico</h2>
+        </div>
+        <div>
+            <a href="/logout">Cerrar Sesión</a>
+        </div>
+    </div>
+    <hr>
+
+    <!-- BARRA DE BÚSQUEDA -->
+    <div class="search-box">
+        <form method="GET" action="/area/Departamento de promoción y fomento artístico">
+            <label><strong>Buscar Proyecto o Grupo (por Folio, Nombre o Responsable):</strong></label><br><br>
+            <input type="text" name="q" value="{{ busqueda }}" placeholder="Escribe para buscar..." style="width: 300px; padding: 5px;">
+            <button type="submit" style="padding: 6px 12px;">Buscar</button>
+            {% if busqueda %}
+                <a href="/area/Departamento de promoción y fomento artístico" style="margin-left: 10px;">Ver todos</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- FORMULARIO DESPLEGABLE -->
+    <details>
+        <summary>+ Registrar Nuevo Proyecto / Grupo Artístico (Hacer clic para desplegar)</summary>
+        <div style="margin-top: 15px;">
+            <form action="/area/Departamento de promoción y fomento artístico" method="POST" enctype="multipart/form-data">
+                <p style="color: #666; font-size: 13px;"><em>* El folio único se asignará automáticamente (ej. FA-2026-0001).</em></p>
+                
+                <label>Nombre del Grupo, Colectivo o Proyecto:</label><br>
+                <input type="text" name="nombre_proyecto" required style="width: 300px;"><br><br>
+
+                <label>Responsable / Instructor a cargo:</label><br>
+                <input type="text" name="responsable" required style="width: 300px;"><br><br>
+
+                <label>1. Listado de Integrantes:</label> <input type="file" name="file_integrantes" accept=".pdf, .png, .jpg"><br><br>
+                <label>2. Listado de Instrumentos:</label> <input type="file" name="file_instrumentos" accept=".pdf, .png, .jpg"><br><br>
+                <label>3. Adquisición de Vestuario:</label> <input type="file" name="file_vestuario" accept=".pdf, .png, .jpg"><br><br>
+                <label>4. Lugares de Presentaciones:</label> <input type="file" name="file_lugares" accept=".pdf, .png, .jpg"><br><br>
+                <label>5. Entrevistas y Medios:</label> <input type="file" name="file_entrevistas" accept=".pdf, .png, .jpg"><br><br>
+                <label>6. Redes y Conexiones:</label> <input type="file" name="file_redes" accept=".pdf, .png, .jpg"><br><br>
+                <label>7. Documento Adicional (Extra):</label> <input type="file" name="file_extra" accept=".pdf, .png, .jpg"><br><br>
+                
+                <button type="submit" style="padding: 8px 15px; background-color: #28a745; color: white; border: none; cursor: pointer; border-radius: 4px;">Guardar Proyecto Artístico</button>
+            </form>
+        </div>
+    </details>
+
+    <hr>
+    <h3>Proyectos Registrados:</h3>
+    <table>
+        <tr>
+            <th>Folio / Proyecto</th>
+            <th>Documentos, Inventarios y Medios (Gestión de Archivos)</th>
+        </tr>
+        {% for p in proyectos %}
+        <tr>
+            <td>
+                <span class="badge-folio">{{ p.folio }}</span><br><br>
+                <strong>{{ p.nombre_proyecto }}</strong><br>
+                <small>Responsable: {{ p.responsable }}</small>
+            </td>
+            <td>
+                <ul>
+                    {% set documentos = [
+                        ('Listado de Integrantes', p.archivos.integrantes, 'integrantes'),
+                        ('Listado de Instrumentos', p.archivos.instrumentos, 'instrumentos'),
+                        ('Adquisición de Vestuario', p.archivos.vestuario, 'vestuario'),
+                        ('Lugares de Presentaciones', p.archivos.lugares, 'lugares'),
+                        ('Entrevistas y Medios', p.archivos.entrevistas, 'entrevistas'),
+                        ('Redes y Conexiones', p.archivos.redes, 'redes'),
+                        ('Documento Extra', p.archivos.extra, 'extra')
+                    ] %}
+                    
+                    {% for nombre_doc, archivo, campo_key in documentos %}
+                        <li>
+                            <strong>{{ nombre_doc }}:</strong> 
+                            {% if archivo %}
+                                <a href="/uploads/{{ archivo }}" target="_blank">Ver</a>
+                                <form action="/eliminar-doc-artistico/{{ p.folio }}/{{ campo_key }}" method="POST" style="display:inline;" onsubmit="return confirm('¿Seguro que quiere borrar el documento de {{ nombre_doc }}?');">
+                                    <button type="submit">Borrar</button>
+                                </form>
+                                <br><small>(Subido)</small>
+                            {% else %}
+                                <span style="color: gray; font-size: 11px;">No subido</span>
+                            {% endif %}
+                            
+                            <!-- Formulario para subir o reemplazar -->
+                            <form action="/area/Departamento de promoción y fomento artístico" method="POST" enctype="multipart/form-data" class="subir-inline">
+                                <input type="hidden" name="folio_proyecto" value="{{ p.folio }}">
+                                <input type="hidden" name="actualizar_campo" value="{{ campo_key }}">
+                                <input type="file" name="file_{{ campo_key }}" required accept=".pdf, .png, .jpg, .jpeg" style="font-size: 10px;">
+                                <button type="submit">{% if archivo %}Reemplazar{% else %}Subir{% endif %}</button>
+                            </form>
+                        </li>
+                    {% endfor %}
+                </ul>
+
+                <!-- BOTÓN DE ELIMINAR PROYECTO COMPLETO -->
+                <div style="margin-top: 15px; border-top: 1px solid #ddd; padding-top: 10px;">
+                    <form action="/area/Departamento de promoción y fomento artístico" method="POST" onsubmit="return confirm('¿Estás seguro de eliminar todo el proyecto artístico con folio {{ p.folio }}?');">
+                        <input type="hidden" name="eliminar_folio" value="{{ p.folio }}">
+                        <button type="submit" style="background-color: #dc3545; color: white; border: none; padding: 6px 12px; cursor: pointer; border-radius: 4px; font-size: 12px;">Eliminar Proyecto Completo</button>
+                    </form>
+                </div>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="2" style="text-align: center;">No hay proyectos artísticos registrados o no se encontraron coincidencias.</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
