@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Programas Nutricionales - DIF Tecámac</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f9f9f9; }
+        h1 { margin-bottom: 5px; }
+        h2 { margin-top: 0; color: #555; }
+        .search-box { background: #fff; padding: 15px; border: 1px solid #ccc; margin-bottom: 15px; border-radius: 4px; }
+        .accordion { background: #fff; border: 1px solid #ccc; padding: 10px 15px; border-radius: 4px; margin-bottom: 20px; }
+        summary { font-weight: bold; color: #007bff; cursor: pointer; font-size: 16px; outline: none; }
+        .form-group { margin-top: 10px; margin-bottom: 10px; }
+        .form-group label { display: block; font-weight: bold; margin-bottom: 3px; }
+        .form-group input[type="text"] { width: 300px; padding: 6px; }
+        .btn-submit { background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-danger { background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+        table { width: 100%; border-collapse: collapse; background: white; border: 1px solid #ccc; }
+        th, td { border: 1px solid #ddd; padding: 10px; vertical-align: top; }
+        th { background: #eee; text-align: left; }
+        .badge { background: #e0f0ff; color: #007bff; padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 13px; }
+        .doc-item { margin-bottom: 8px; font-size: 14px; border-bottom: 1px dashed #eee; padding-bottom: 5px; }
+    </style>
+</head>
+<body>
+
+<h1>Panel de Control</h1>
+<h2>Departamento de Programas Nutricionales</h2>
+<hr>
+
+<div class="search-box">
+    <strong>Buscar Beneficiario (por Folio, Nombre o CURP):</strong><br><br>
+    <form method="GET" action="{{ url_for('detalle_area', area_nombre='Departamento de programas nutricionales') }}">
+        <input type="text" name="q" value="{{ busqueda or '' }}" placeholder="Escribe para buscar..." style="width: 250px; padding: 5px;">
+        <button type="submit" style="padding: 5px 12px;">Buscar</button>
+    </form>
+</div>
+
+<details class="accordion">
+    <summary>+ Registrar Nuevo Beneficiario</summary>
+    <p style="font-style: italic; color: #666; font-size: 13px;">* El folio único se asignará automáticamente al guardar el registro.</p>
+    <form method="POST" action="{{ url_for('guardar_registro', area_nombre='Departamento de programas nutricionales') }}" enctype="multipart/form-data">
+        <div class="form-group">
+            <label>Nombre del Beneficiario:</label>
+            <input type="text" name="nombre" required>
+        </div>
+        <div class="form-group">
+            <label>CURP (Texto):</label>
+            <input type="text" name="curp" required>
+        </div>
+        
+        <div class="form-group"><label>1. CURP (Documento):</label><input type="file" name="curp_doc"></div>
+        <div class="form-group"><label>2. Comprobante de Domicilio:</label><input type="file" name="comprobante_domicilio"></div>
+        <div class="form-group"><label>3. Estudio Socioeconómico:</label><input type="file" name="estudio_socioeconomico"></div>
+        
+        <br>
+        <button type="submit" class="btn-submit">Guardar Registro</button>
+    </form>
+</details>
+
+<h3>Beneficiarios Registrados:</h3>
+
+<table>
+    <thead>
+        <tr>
+            <th style="width: 35%;">Folio / Beneficiario</th>
+            <th>Documentos y Gestión del Expediente</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for b in beneficiarios %}
+        <tr>
+            <td>
+                <span class="badge">{{ b[0] }}</span><br><br>
+                <strong>{{ b[1] }}</strong><br>
+                <small>CURP: {{ b[2] }}</small>
+            </td>
+            <td>
+                <div class="doc-item">
+                    <strong>CURP Doc:</strong> 
+                    {% if b[3] %}<a href="{{ url_for('uploaded_file', filename=b[3]) }}" target="_blank">Ver</a>{% else %}<span style="color: #888;">No subido</span>{% endif %}
+                </div>
+                <div class="doc-item">
+                    <strong>Domicilio:</strong> 
+                    {% if b[4] %}<a href="{{ url_for('uploaded_file', filename=b[4]) }}" target="_blank">Ver</a>{% else %}<span style="color: #888;">No subido</span>{% endif %}
+                </div>
+                <div class="doc-item">
+                    <strong>Estudio Socioeconómico:</strong> 
+                    {% if b[5] %}<a href="{{ url_for('uploaded_file', filename=b[5]) }}" target="_blank">Ver</a>{% else %}<span style="color: #888;">No subido</span>{% endif %}
+                </div>
+                <br>
+                <a href="{{ url_for('eliminar_registro', area_nombre='Departamento de programas nutricionales', folio=b[0]) }}" onclick="return confirm('¿Seguro que deseas eliminar este registro?')" class="btn-danger" style="text-decoration: none; display: inline-block;">Eliminar Beneficiario</a>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="2" style="text-align: center; color: #777;">No se encontraron registros.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+</body>
+</html>
