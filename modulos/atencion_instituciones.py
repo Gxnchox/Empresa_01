@@ -3,8 +3,8 @@ import sqlite3
 from flask import redirect, render_template, request, session, url_for
 
 # Configuración de ruta absoluta unificada para la base de datos
-BASE_DIR = '/home/ubuntu/Empresa_01'
-DB_PATH = os.path.join(BASE_DIR, 'dif_tecamac.db')
+BASE_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+DB_PATH = os.path.join(BASE_DIR, 'datos', 'registros.db')
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 
 

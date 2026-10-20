@@ -1,0 +1,8 @@
+.virtual/
+__pycache__/
+*.db
+*.db.*
+datos/
+uploads/
+gunicorn.log
+.env

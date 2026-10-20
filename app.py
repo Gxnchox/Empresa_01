@@ -53,6 +53,7 @@ if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
 # Inicialización de bases de datos
+os.makedirs(os.path.join(BASE_DIR, 'datos'), exist_ok=True)
 inicializar_db_servicio()
 inicializar_db_educacion_inicial()
 inicializar_db_educacion_preescolar()
