@@ -11,33 +11,28 @@ from modulos.servicio_social import (
 # 2. Módulos de las demás áreas
 from modulos.educacion_inicial import (
     inicializar_db_educacion_inicial,
-    registrar_alumno_inicial,
-    obtener_alumnos_inicial,
-    eliminar_alumno_inicial
+    registrar_educacion_inicial,
+    eliminar_doc_inicial_individual
 )
 from modulos.educacion_preescolar import (
     inicializar_db_educacion_preescolar,
-    registrar_alumno_preescolar,
-    obtener_alumnos_preescolar,
-    eliminar_alumno_preescolar
+    registrar_educacion_preescolar,
+    eliminar_doc_preescolar_individual
 )
 from modulos.programas_nutricionales import (
     inicializar_db_programas_nutricionales,
-    registrar_beneficiario_nutricional,
-    obtener_beneficiarios_nutricionales,
-    eliminar_beneficiario_nutricional
+    registrar_programas_nutricionales,
+    eliminar_doc_nutricional_individual
 )
 from modulos.atencion_instituciones import (
     inicializar_db_atencion_instituciones,
-    registrar_institucion,
-    obtener_instituciones,
-    eliminar_institucion
+    registrar_atencion_instituciones,
+    eliminar_doc_institucional_individual
 )
 from modulos.bibliotecas import (
     inicializar_db_bibliotecas,
-    registrar_usuario_biblioteca,
-    obtener_usuarios_biblioteca,
-    eliminar_usuario_biblioteca
+    registrar_bibliotecas,
+    eliminar_doc_bibliotecas_individual
 )
 
 # 3. Módulo de Promoción Artística
@@ -53,6 +48,9 @@ app.secret_key = 'clave_secreta_super_segura_dif_tecamac'
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
 
 # Inicialización de bases de datos
 inicializar_db_servicio()
@@ -72,18 +70,6 @@ USUARIOS_DEPARTAMENTOS = {
     'Departamento de bibliotecas': 'bibliotecas123',
     'Departamento de promoción y fomento artístico': 'artistico123'
 }
-
-def guardar_archivos(request_files):
-    guardados = {}
-    for key, file in request_files.items():
-        if file and file.filename != '':
-            filename = file.filename
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(filepath)
-            guardados[key] = filename
-        else:
-            guardados[key] = None
-    return guardados
 
 @app.route('/')
 def home():
@@ -112,114 +98,52 @@ def logout():
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-# --- RUTA PARA SERVICIO SOCIAL ---
-@app.route('/area/Departamento de servicio social', methods=['GET', 'POST'])
-def detalle_servicio_social():
-    if 'usuario' not in session or session['usuario'] != 'Departamento de servicio social':
-        return redirect(url_for('login'))
-    return registrar_servicio_social()
-
-@app.route('/area/Departamento de servicio social/eliminar_doc/<folio>/<campo>')
-def eliminar_doc_individual(folio, campo):
-    if 'usuario' not in session or session['usuario'] != 'Departamento de servicio social':
-        return redirect(url_for('login'))
-    return eliminar_documento_individual(folio, campo)
-
-# --- RUTA PARA PROMOCIÓN ARTÍSTICA ---
-@app.route('/area/Departamento de promoción y fomento artístico', methods=['GET', 'POST'])
-def detalle_promocion_artistica():
-    if 'usuario' not in session or session['usuario'] != 'Departamento de promoción y fomento artístico':
-        return redirect(url_for('login'))
-    return registrar_promocion_artistica()
-
-@app.route('/area/Departamento de promoción y fomento artístico/eliminar_doc/<folio>/<campo>')
-def eliminar_doc_artistico(folio, campo):
-    if 'usuario' not in session or session['usuario'] != 'Departamento de promoción y fomento artístico':
-        return redirect(url_for('login'))
-    return eliminar_documento_artistico_individual(folio, campo)
-
-# --- RUTA GENERAL PARA LAS DEMÁS ÁREAS ---
-@app.route('/area/<area_nombre>')
+# --- RUTA UNIFICADA PRINCIPAL POR ÁREA ---
+@app.route('/area/<path:area_nombre>', methods=['GET', 'POST'])
 def detalle_area(area_nombre):
     if 'usuario' not in session or session['usuario'] != area_nombre:
         return redirect(url_for('login'))
-    
+
     if area_nombre == 'Departamento de servicio social':
-        return redirect(url_for('detalle_servicio_social'))
-    if area_nombre == 'Departamento de promoción y fomento artístico':
-        return redirect(url_for('detalle_promocion_artistica'))
-
-    q = request.args.get('q', None)
-
-    if area_nombre == 'Departamento de educación inicial':
-        alumnos = obtener_alumnos_inicial(q)
-        return render_template('educacion_inicial.html', alumnos=alumnos, busqueda=q)
-
+        return registrar_servicio_social()
+    elif area_nombre == 'Departamento de educación inicial':
+        return registrar_educacion_inicial()
     elif area_nombre == 'Departamento de educación preescolar':
-        alumnos = obtener_alumnos_preescolar(q)
-        return render_template('educacion_preescolar.html', alumnos=alumnos, busqueda=q)
-
+        return registrar_educacion_preescolar()
     elif area_nombre == 'Departamento de programas nutricionales':
-        beneficiarios = obtener_beneficiarios_nutricionales(q)
-        return render_template('programas_nutricionales.html', beneficiarios=beneficiarios, busqueda=q)
-
+        return registrar_programas_nutricionales()
     elif area_nombre == 'Atención a instituciones educativas':
-        inst = obtener_instituciones(q)
-        return render_template('atencion_instituciones.html', instituciones=inst, busqueda=q)
-
+        return registrar_atencion_instituciones()
     elif area_nombre == 'Departamento de bibliotecas':
-        usr = obtener_usuarios_biblioteca(q)
-        return render_template('bibliotecas.html', usuarios=usr, busqueda=q)
+        return registrar_bibliotecas()
+    elif area_nombre == 'Departamento de promoción y fomento artístico':
+        return registrar_promocion_artistica()
 
     return "Área no encontrada", 404
 
-# --- GUARDAR RUTAS PARA ÁREAS GENERALES ---
-@app.route('/area/<area_nombre>/guardar', methods=['POST'])
-def guardar_registro(area_nombre):
-    archivos = guardar_archivos(request.files)
+# --- ELIMINAR DOCUMENTO INDIVIDUAL ---
+@app.route('/eliminar-documento/<folio>/<campo>', methods=['GET', 'POST'])
+def eliminar_doc_individual(folio, campo):
+    if 'usuario' not in session:
+        return redirect(url_for('login'))
 
-    if area_nombre == 'Departamento de educación inicial':
-        nombre = request.form.get('nombre')
-        curp = request.form.get('curp')
-        registrar_alumno_inicial(nombre, curp, archivos)
+    area = session['usuario']
+    if area == 'Departamento de servicio social':
+        return eliminar_documento_individual(folio, campo)
+    elif area == 'Departamento de educación inicial':
+        return eliminar_doc_inicial_individual(folio, campo)
+    elif area == 'Departamento de educación preescolar':
+        return eliminar_doc_preescolar_individual(folio, campo)
+    elif area == 'Departamento de programas nutricionales':
+        return eliminar_doc_nutricional_individual(folio, campo)
+    elif area == 'Atención a instituciones educativas':
+        return eliminar_doc_institucional_individual(folio, campo)
+    elif area == 'Departamento de bibliotecas':
+        return eliminar_doc_bibliotecas_individual(folio, campo)
+    elif area == 'Departamento de promoción y fomento artístico':
+        return eliminar_documento_artistico_individual(folio, campo)
 
-    elif area_nombre == 'Departamento de educación preescolar':
-        nombre = request.form.get('nombre')
-        curp = request.form.get('curp')
-        registrar_alumno_preescolar(nombre, curp, archivos)
-
-    elif area_nombre == 'Departamento de programas nutricionales':
-        nombre = request.form.get('nombre')
-        curp = request.form.get('curp')
-        registrar_beneficiario_nutricional(nombre, curp, archivos)
-
-    elif area_nombre == 'Atención a instituciones educativas':
-        escuela = request.form.get('nombre_escuela')
-        cct = request.form.get('cct')
-        registrar_institucion(escuela, cct, archivos)
-
-    elif area_nombre == 'Departamento de bibliotecas':
-        nombre = request.form.get('nombre')
-        curp = request.form.get('curp')
-        registrar_usuario_biblioteca(nombre, curp, archivos)
-
-    return redirect(url_for('detalle_area', area_nombre=area_nombre))
-
-# --- ELIMINAR RUTAS PARA ÁREAS GENERALES ---
-@app.route('/area/<area_nombre>/eliminar/<folio>')
-def eliminar_registro(area_nombre, folio):
-    if area_nombre == 'Departamento de educación inicial':
-        eliminar_alumno_inicial(folio)
-    elif area_nombre == 'Departamento de educación preescolar':
-        eliminar_alumno_preescolar(folio)
-    elif area_nombre == 'Departamento de programas nutricionales':
-        eliminar_beneficiario_nutricional(folio)
-    elif area_nombre == 'Atención a instituciones educativas':
-        eliminar_institucion(folio)
-    elif area_nombre == 'Departamento de bibliotecas':
-        eliminar_usuario_biblioteca(folio)
-
-    return redirect(url_for('detalle_area', area_nombre=area_nombre))
+    return redirect(url_for('home'))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

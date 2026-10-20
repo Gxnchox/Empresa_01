@@ -5,9 +5,11 @@
     <title>Educación Inicial - DIF Tecámac</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; background-color: #f9f9f9; }
-        h1 { margin-bottom: 5px; }
-        h2 { margin-top: 0; color: #555; }
-        .search-box { background: #fff; padding: 15px; border: 1px solid #ccc; margin-bottom: 15px; border-radius: 4px; }
+        .header-container { display: flex; justify-content: space-between; align-items: center; }
+        h1 { margin: 0 0 5px 0; }
+        h2 { margin: 0; color: #555; }
+        .logout-link { color: #6f42c1; font-weight: bold; text-decoration: underline; font-size: 16px; }
+        .search-box { background: #fff; padding: 15px; border: 1px solid #ccc; margin-top: 15px; margin-bottom: 15px; border-radius: 4px; }
         .accordion { background: #fff; border: 1px solid #ccc; padding: 10px 15px; border-radius: 4px; margin-bottom: 20px; }
         summary { font-weight: bold; color: #007bff; cursor: pointer; font-size: 16px; outline: none; }
         .form-group { margin-top: 10px; margin-bottom: 10px; }
@@ -19,13 +21,19 @@
         th, td { border: 1px solid #ddd; padding: 10px; vertical-align: top; }
         th { background: #eee; text-align: left; }
         .badge { background: #e0f0ff; color: #007bff; padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 13px; }
-        .doc-item { margin-bottom: 8px; font-size: 14px; border-bottom: 1px dashed #eee; padding-bottom: 5px; }
+        .doc-item { margin-bottom: 12px; font-size: 14px; border-bottom: 1px dashed #eee; padding-bottom: 8px; }
+        .doc-item form { display: inline-block; margin-top: 4px; }
     </style>
 </head>
 <body>
 
-<h1>Panel de Control</h1>
-<h2>Departamento de Educación Inicial</h2>
+<div class="header-container">
+    <div>
+        <h1>Panel de Control</h1>
+        <h2>Departamento de Educación Inicial</h2>
+    </div>
+    <a href="{{ url_for('logout') }}" class="logout-link">Cerrar Sesión</a>
+</div>
 <hr>
 
 <div class="search-box">
@@ -39,7 +47,7 @@
 <details class="accordion">
     <summary>+ Registrar Nuevo Alumno</summary>
     <p style="font-style: italic; color: #666; font-size: 13px;">* El folio único se asignará automáticamente al guardar el registro.</p>
-    <form method="POST" action="{{ url_for('guardar_registro', area_nombre='Departamento de educación inicial') }}" enctype="multipart/form-data">
+    <form method="POST" action="{{ url_for('detalle_area', area_nombre='Departamento de educación inicial') }}" enctype="multipart/form-data">
         <div class="form-group">
             <label>Nombre completo del estudiante:</label>
             <input type="text" name="nombre" required>
@@ -49,12 +57,12 @@
             <input type="text" name="curp" required>
         </div>
         
-        <div class="form-group"><label>1. Acta de Nacimiento:</label><input type="file" name="acta_nacimiento"></div>
-        <div class="form-group"><label>2. CURP (Documento):</label><input type="file" name="curp_doc"></div>
-        <div class="form-group"><label>3. Comprobante de Domicilio:</label><input type="file" name="comprobante_domicilio"></div>
-        <div class="form-group"><label>4. Cartilla de Vacunación:</label><input type="file" name="cartilla_vacunacion"></div>
-        <div class="form-group"><label>5. Foto Infantil:</label><input type="file" name="foto"></div>
-        <div class="form-group"><label>6. INE del Tutor:</label><input type="file" name="ine_tutor"></div>
+        <div class="form-group"><label>1. Carta de Presentación / Acta:</label><input type="file" name="file_acta_nacimiento"></div>
+        <div class="form-group"><label>2. CURP (Documento):</label><input type="file" name="file_curp_doc"></div>
+        <div class="form-group"><label>3. Comprobante de Domicilio:</label><input type="file" name="file_comprobante_domicilio"></div>
+        <div class="form-group"><label>4. Cartilla Vacunación:</label><input type="file" name="file_cartilla_vacunacion"></div>
+        <div class="form-group"><label>5. Foto Infantil:</label><input type="file" name="file_foto"></div>
+        <div class="form-group"><label>6. INE del Tutor:</label><input type="file" name="file_ine_tutor"></div>
         
         <br>
         <button type="submit" class="btn-submit">Guardar Expediente</button>
@@ -74,37 +82,50 @@
         {% for alumno in alumnos %}
         <tr>
             <td>
-                <span class="badge">{{ alumno[0] }}</span><br><br>
-                <strong>{{ alumno[1] }}</strong><br>
-                <small>CURP: {{ alumno[2] }}</small>
+                <span class="badge">{{ alumno.folio }}</span><br><br>
+                <strong>{{ alumno.nombre }}</strong><br>
+                <small>CURP: {{ alumno.curp }}</small>
             </td>
             <td>
+                {% set docs = [
+                    ('acta_nacimiento', 'Acta de Nacimiento', alumno.archivos.acta_nacimiento),
+                    ('curp_doc', 'CURP', alumno.archivos.curp_doc),
+                    ('comprobante_domicilio', 'Domicilio', alumno.archivos.comprobante_domicilio),
+                    ('cartilla_vacunacion', 'Cartilla Vacunación', alumno.archivos.cartilla_vacunacion),
+                    ('foto', 'Foto', alumno.archivos.foto),
+                    ('ine_tutor', 'INE Tutor', alumno.archivos.ine_tutor)
+                ] %}
+
+                {% for campo_key, campo_nombre, archivo_val in docs %}
                 <div class="doc-item">
-                    <strong>Acta de Nacimiento:</strong> 
-                    {% if alumno[3] %}<a href="{{ url_for('uploaded_file', filename=alumno[3]) }}" target="_blank">Ver</a>{% else %}<span style="color: #888;">No subido</span>{% endif %}
+                    <strong>{{ campo_nombre }}:</strong>
+                    {% if archivo_val %}
+                        <a href="{{ url_for('uploaded_file', filename=archivo_val) }}" target="_blank">Ver</a>
+                        <a href="{{ url_for('eliminar_doc_individual', folio=alumno.folio, campo=campo_key) }}" style="color: red; margin-left: 5px;">[Borrar]</a>
+                        <br>(Subido)<br>
+                        <form method="POST" action="{{ url_for('detalle_area', area_nombre='Departamento de educación inicial') }}" enctype="multipart/form-data">
+                            <input type="hidden" name="folio" value="{{ alumno.folio }}">
+                            <input type="hidden" name="actualizar_campo" value="{{ campo_key }}">
+                            <input type="file" name="file_{{ campo_key }}" required>
+                            <button type="submit">Reemplazar</button>
+                        </form>
+                    {% else %}
+                        <span style="color: #888;">No subido</span><br>
+                        <form method="POST" action="{{ url_for('detalle_area', area_nombre='Departamento de educación inicial') }}" enctype="multipart/form-data">
+                            <input type="hidden" name="folio" value="{{ alumno.folio }}">
+                            <input type="hidden" name="actualizar_campo" value="{{ campo_key }}">
+                            <input type="file" name="file_{{ campo_key }}" required>
+                            <button type="submit">Subir</button>
+                        </form>
+                    {% endif %}
                 </div>
-                <div class="doc-item">
-                    <strong>CURP Doc:</strong> 
-                    {% if alumno[4] %}<a href="{{ url_for('uploaded_file', filename=alumno[4]) }}" target="_blank">Ver</a>{% else %}<span style="color: #888;">No subido</span>{% endif %}
-                </div>
-                <div class="doc-item">
-                    <strong>Domicilio:</strong> 
-                    {% if alumno[5] %}<a href="{{ url_for('uploaded_file', filename=alumno[5]) }}" target="_blank">Ver</a>{% else %}<span style="color: #888;">No subido</span>{% endif %}
-                </div>
-                <div class="doc-item">
-                    <strong>Cartilla Vacunación:</strong> 
-                    {% if alumno[6] %}<a href="{{ url_for('uploaded_file', filename=alumno[6]) }}" target="_blank">Ver</a>{% else %}<span style="color: #888;">No subido</span>{% endif %}
-                </div>
-                <div class="doc-item">
-                    <strong>Foto:</strong> 
-                    {% if alumno[7] %}<a href="{{ url_for('uploaded_file', filename=alumno[7]) }}" target="_blank">Ver</a>{% else %}<span style="color: #888;">No subido</span>{% endif %}
-                </div>
-                <div class="doc-item">
-                    <strong>INE Tutor:</strong> 
-                    {% if alumno[8] %}<a href="{{ url_for('uploaded_file', filename=alumno[8]) }}" target="_blank">Ver</a>{% else %}<span style="color: #888;">No subido</span>{% endif %}
-                </div>
+                {% endfor %}
+
                 <br>
-                <a href="{{ url_for('eliminar_registro', area_nombre='Departamento de educación inicial', folio=alumno[0]) }}" onclick="return confirm('¿Seguro que deseas eliminar este expediente?')" class="btn-danger" style="text-decoration: none; display: inline-block;">Eliminar Alumno Completo</a>
+                <form method="POST" action="{{ url_for('detalle_area', area_nombre='Departamento de educación inicial') }}" onsubmit="return confirm('¿Seguro que deseas eliminar este expediente completo?');">
+                    <input type="hidden" name="eliminar_folio" value="{{ alumno.folio }}">
+                    <button type="submit" class="btn-danger">Eliminar Alumno Completo</button>
+                </form>
             </td>
         </tr>
         {% else %}

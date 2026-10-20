@@ -36,8 +36,7 @@ def generar_folio_artistico():
   cursor.execute('SELECT COUNT(*) FROM promocion_artistica')
   total = cursor.fetchone()[0]
   conn.close()
-  siguiente_numero = total + 1
-  return f'FA-2026-{siguiente_numero:04d}'
+  return f'FA-2026-{(total + 1):04d}'
 
 
 def registrar_promocion_artistica():
@@ -46,7 +45,6 @@ def registrar_promocion_artistica():
   conn.row_factory = sqlite3.Row
   cursor = conn.cursor()
 
-  # Eliminar proyecto completo por folio
   if request.method == 'POST' and 'eliminar_folio' in request.form:
     folio_a_eliminar = request.form.get('eliminar_folio')
     cursor.execute(
@@ -80,10 +78,11 @@ def registrar_promocion_artistica():
     return redirect(url_for('detalle_promocion_artistica'))
 
   if request.method == 'POST':
-    folio_existente = request.form.get('folio_proyecto')
+    folio_existente = request.form.get('folio_proyecto') or request.form.get(
+        'folio'
+    )
     actualizar_campo = request.form.get('actualizar_campo')
 
-    # Reemplazar o subir documento individual rápidamente
     if folio_existente and actualizar_campo:
       file_key = f'file_{actualizar_campo}'
       file = request.files.get(file_key)
@@ -111,22 +110,11 @@ def registrar_promocion_artistica():
       conn.close()
       return redirect(url_for('detalle_promocion_artistica'))
 
-    # Registrar nuevo proyecto artístico
     nombre_proyecto = request.form.get('nombre_proyecto')
     responsable = request.form.get('responsable')
 
     if nombre_proyecto and responsable:
       nuevo_folio = generar_folio_artistico()
-
-      nombres_form = [
-          'file_integrantes',
-          'file_instrumentos',
-          'file_vestuario',
-          'file_lugares',
-          'file_entrevistas',
-          'file_redes',
-          'file_extra',
-      ]
       db_campos = [
           'integrantes',
           'instrumentos',
@@ -136,16 +124,15 @@ def registrar_promocion_artistica():
           'redes',
           'extra',
       ]
-
       archivos_guardados = {}
-      for campo_db, campo_form in zip(db_campos, nombres_form):
-        file = request.files.get(campo_form)
+      for campo in db_campos:
+        file = request.files.get(f'file_{campo}') or request.files.get(campo)
         if file and file.filename != '':
-          filename = f'{nuevo_folio}_{campo_db}_{file.filename}'
+          filename = f'{nuevo_folio}_{campo}_{file.filename}'
           file.save(os.path.join(UPLOAD_FOLDER, filename))
-          archivos_guardados[campo_db] = filename
+          archivos_guardados[campo] = filename
         else:
-          archivos_guardados[campo_db] = None
+          archivos_guardados[campo] = None
 
       cursor.execute(
           '''

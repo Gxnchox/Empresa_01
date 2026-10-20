@@ -46,7 +46,7 @@ def registrar_servicio_social():
   conn.row_factory = sqlite3.Row
   cursor = conn.cursor()
 
-  # Eliminar expediente completo por folio (movido a la misma columna)
+  # Eliminar expediente completo por folio
   if request.method == 'POST' and 'eliminar_folio' in request.form:
     folio_a_eliminar = request.form.get('eliminar_folio')
     cursor.execute(
@@ -77,10 +77,16 @@ def registrar_servicio_social():
     )
     conn.commit()
     conn.close()
-    return redirect(url_for('detalle_servicio_social'))
+    return redirect(
+        url_for(
+            'detalle_area', area_nombre='Departamento de servicio social'
+        )
+    )
 
   if request.method == 'POST':
-    folio_existente = request.form.get('folio_prestador')
+    folio_existente = request.form.get('folio_prestador') or request.form.get(
+        'folio'
+    )
     actualizar_campo = request.form.get('actualizar_campo')
 
     # Reemplazar o subir documento individual rápidamente
@@ -108,9 +114,13 @@ def registrar_servicio_social():
         )
         conn.commit()
       conn.close()
-      return redirect(url_for('detalle_servicio_social'))
+      return redirect(
+          url_for(
+              'detalle_area', area_nombre='Departamento de servicio social'
+          )
+      )
 
-    # Registrar nuevo prestador (optimizado)
+    # Registrar nuevo prestador
     nombre = request.form.get('nombre')
     curp = request.form.get('curp')
 
@@ -166,7 +176,11 @@ def registrar_servicio_social():
       )
       conn.commit()
       conn.close()
-      return redirect(url_for('detalle_servicio_social'))
+      return redirect(
+          url_for(
+              'detalle_area', area_nombre='Departamento de servicio social'
+          )
+      )
 
   busqueda = request.args.get('q', '').strip()
   if busqueda:
@@ -232,4 +246,8 @@ def eliminar_documento_individual(folio, campo):
       conn.commit()
 
   conn.close()
-  return redirect(url_for('detalle_servicio_social'))
+  return redirect(
+      url_for(
+          'detalle_area', area_nombre='Departamento de servicio social'
+      )
+  )
