@@ -8,5 +8,8 @@ services:
     ports:
       - "5000:5000"
     volumes:
+      - .:/app
       - ./uploads:/app/uploads
       - ./dif_tecamac.db:/app/dif_tecamac.db
+    environment:
+      - FLASK_ENV=development
