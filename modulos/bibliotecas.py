@@ -2,9 +2,10 @@ import os
 import sqlite3
 from flask import redirect, render_template, request, session, url_for
 
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-DB_PATH = os.path.join(BASE_DIR, '..', 'dif_tecamac.db')
-UPLOAD_FOLDER = os.path.join(BASE_DIR, '..', 'uploads')
+# Configuración de ruta absoluta unificada para la base de datos en AWS EC2
+BASE_DIR = '/home/ubuntu/Empresa_01'
+DB_PATH = os.path.join(BASE_DIR, 'dif_tecamac.db')
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 
 
 def inicializar_db_bibliotecas():

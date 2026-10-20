@@ -2,9 +2,10 @@ import os
 import sqlite3
 from flask import redirect, render_template, request, session, url_for
 
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-DB_PATH = os.path.join(BASE_DIR, '..', 'dif_tecamac.db')
-UPLOAD_FOLDER = os.path.join(BASE_DIR, '..', 'uploads')
+# Configuración de ruta absoluta unificada para la base de datos en AWS EC2
+BASE_DIR = '/home/ubuntu/Empresa_01'
+DB_PATH = os.path.join(BASE_DIR, 'dif_tecamac.db')
+UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 
 
 def inicializar_db_artistica():
@@ -75,7 +76,12 @@ def registrar_promocion_artistica():
     )
     conn.commit()
     conn.close()
-    return redirect(url_for('detalle_promocion_artistica'))
+    return redirect(
+        url_for(
+            'detalle_area',
+            area_nombre='Departamento de promoción y fomento artístico',
+        )
+    )
 
   if request.method == 'POST':
     folio_existente = request.form.get('folio_proyecto') or request.form.get(
@@ -108,7 +114,12 @@ def registrar_promocion_artistica():
         )
         conn.commit()
       conn.close()
-      return redirect(url_for('detalle_promocion_artistica'))
+      return redirect(
+          url_for(
+              'detalle_area',
+              area_nombre='Departamento de promoción y fomento artístico',
+          )
+      )
 
     nombre_proyecto = request.form.get('nombre_proyecto')
     responsable = request.form.get('responsable')
@@ -154,7 +165,12 @@ def registrar_promocion_artistica():
       )
       conn.commit()
       conn.close()
-      return redirect(url_for('detalle_promocion_artistica'))
+      return redirect(
+          url_for(
+              'detalle_area',
+              area_nombre='Departamento de promoción y fomento artístico',
+          )
+      )
 
   busqueda = request.args.get('q', '').strip()
   if busqueda:
@@ -221,4 +237,9 @@ def eliminar_documento_artistico_individual(folio, campo):
       conn.commit()
 
   conn.close()
-  return redirect(url_for('detalle_promocion_artistica'))
+  return redirect(
+      url_for(
+          'detalle_area',
+          area_nombre='Departamento de promoción y fomento artístico',
+      )
+  )
