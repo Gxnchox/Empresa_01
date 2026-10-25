@@ -6,3 +6,4 @@ datos/
 uploads/
 gunicorn.log
 .env
+traer_datos.sh
